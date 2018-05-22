@@ -14,7 +14,7 @@ namespace SSLCertGenerator
         private static StoreName store = StoreName.My;                          // Store as a personal certificate
 
 
-        private static X509Certificate2 CreateSelfSignedCertificate(string Operator, string SiteId, int SeqNo, bool isServerCert)
+        private static X509Certificate2 CreateSelfSignedCertificate(string Operator, string SiteId, int SeqNo, bool isServerCert, string SAN)
         {
             // Create a custom subject name & friendly name
             string distName = $"CN={FriendlyName.ToLower()}_{SiteId}_{SeqNo}, OU={Operator}_{SiteId}, O={Operator}, C=GB";
@@ -22,11 +22,25 @@ namespace SSLCertGenerator
             // create DN for subject and issuer
             //            var dn = new X500DistinguishedName(distName);
             //            dn.Encode(distName, X500NameFlags.XCN_CERT_NAME_STR_NONE);
-            var dn = new CX500DistinguishedName();
+            var dn = new CX500DistinguishedName();            
             dn.Encode(distName, X500NameFlags.XCN_CERT_NAME_STR_NONE);
 
+
             // create a new private key for the certificate
-            CX509PrivateKey privateKey = new CX509PrivateKey();
+            //CX509PrivateKey privateKey = new CX509PrivateKey();
+            //var privateKey = new CX509PrivateKey();
+            var typeName = "X509Enrollment.CX509PrivateKey";
+            var type = Type.GetTypeFromProgID(typeName);
+            if (type == null)
+            {
+                throw new Exception(typeName + " is not available on your system: 0x80040154 (REGDB_E_CLASSNOTREG)");
+            }
+            var privateKey = Activator.CreateInstance(type) as IX509PrivateKey;
+            if (privateKey == null)
+            {
+                throw new Exception("Your certlib does not know an implementation of " + typeName +
+                                    " (in HKLM:\\SOFTWARE\\Classes\\Interface\\)!");
+            }
             privateKey.ProviderName = "Microsoft Base Cryptographic Provider v1.0";
             privateKey.MachineContext = true;
             privateKey.Length = 2048;
@@ -52,8 +66,8 @@ namespace SSLCertGenerator
             else
             {
                 oid.InitializeFromValue("1.3.6.1.5.5.7.3.2"); // SSL client
-
             }
+
             var oidlist = new CObjectIds();
             oidlist.Add(oid);
             var eku = new CX509ExtensionEnhancedKeyUsage();
@@ -62,6 +76,23 @@ namespace SSLCertGenerator
             // Create the self signing request
             var cert = new CX509CertificateRequestCertificate();
             cert.InitializeFromPrivateKey(X509CertificateEnrollmentContext.ContextMachine, privateKey, "");
+
+            if (!string.IsNullOrEmpty(SAN))
+            {
+                CAlternativeName objRfc822Name = new CAlternativeName();
+                CAlternativeNames objAlternativeNames = new CAlternativeNames();
+                CX509ExtensionAlternativeNames objExtensionAlternativeNames = new CX509ExtensionAlternativeNames();
+
+
+                // Set Alternative RFC822 Name 
+                objRfc822Name.InitializeFromString(AlternativeNameType.XCN_CERT_ALT_NAME_DNS_NAME, SAN);
+
+                // Set Alternative Names 
+                objAlternativeNames.Add(objRfc822Name);
+                objExtensionAlternativeNames.InitializeEncode(objAlternativeNames);
+                cert.X509Extensions.Add((CX509Extension)objExtensionAlternativeNames);
+            }
+
             cert.Subject = dn;
             cert.Issuer = dn; // the issuer and the subject are the same
             cert.NotBefore = DateTime.Today;
@@ -160,9 +191,20 @@ namespace SSLCertGenerator
             //  File.WriteAllBytes("c://Test.cer", newCertificate.Export(X509ContentType.Cert));
         }
 
+        public static bool CreateAndStoreServerSelfSignedCertificate(string friendlyName, string siteurl)
+        {
+            FriendlyName = friendlyName;
+            X509Certificate2 Cert = CreateSelfSignedCertificate(friendlyName.Replace(" ",""), "0", 1, true, siteurl);
+            if (Cert == null)
+                return false;
+            else
+                return StoreSelfSignedCertificate(Cert);
+
+        }
+
         public static bool CreateAndStoreSelfSignedCertificate(string Operator, string SiteId, int SeqNo, bool isServerCert)
         {
-            X509Certificate2 Cert = CreateSelfSignedCertificate(Operator, SiteId, SeqNo, isServerCert);
+            X509Certificate2 Cert = CreateSelfSignedCertificate(Operator, SiteId, SeqNo, isServerCert, string.Empty);
             if (Cert == null)
                 return false;
             else
