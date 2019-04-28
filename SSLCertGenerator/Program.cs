@@ -158,7 +158,7 @@ namespace SSLCertGenerator
             {
                 File.WriteAllText("thumbprint.txt", cert.Thumbprint);
             }           
-            Console.ReadKey();
+            //Console.ReadKey();
 
             if (delete)
             {
