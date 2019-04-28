@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
-    <StartArguments>-friendlyname QuantumApiServer -operator=PlaysafeSystems - siteid 0 -seq 1 -server -urlacl quantum.api.local:4433</StartArguments>
+    <StartArguments>--friendlyname=QuantumUploadClient --operator=playsafesystems --siteid=6 --seq=1</StartArguments>
   </PropertyGroup>
 </Project>

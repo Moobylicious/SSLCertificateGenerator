@@ -45,7 +45,7 @@ namespace SSLCertGenerator
                 else
                 {
                     var urlOnly = acl.Value;
-                    if (urlOnly.IndexOf(":") > 0)
+                    if (!string.IsNullOrEmpty(urlOnly) && (urlOnly.IndexOf(":") > 0))
                     {
                         urlOnly = urlOnly.Substring(0, urlOnly.IndexOf(":"));
                     };
@@ -138,7 +138,11 @@ namespace SSLCertGenerator
                     var pwdGuid = Guid.NewGuid().ToString().Replace("{", "").Replace("}", "").Replace("-", "").Substring(0, 8);
                     byte[] certData = cert.Export(X509ContentType.Pfx, pwdGuid);
                     File.WriteAllBytes($"{friendlyName.Value}.pfx", certData);
-                    Console.WriteLine($"saved file to {friendlyName.Value}.pfx - add this to Trusted providers on clients (password is {pwdGuid})");
+
+                    File.WriteAllText("pass.txt", pwdGuid);
+
+                    Console.WriteLine($"saved file to {friendlyName.Value}.pfx - add this to Trusted providers on clients (password is {pwdGuid}), saved to pass.txt");
+
                 }
             }
             else if (!string.IsNullOrEmpty(filename.Value) && !delete)
@@ -149,7 +153,11 @@ namespace SSLCertGenerator
                 Console.WriteLine($"saved file to {filename.Value}");
             }
 
-            Console.WriteLine($"finished.  Cert thumbprint = {cert?.Thumbprint ?? "n/a"}");
+            Console.WriteLine($"finished.  Cert thumbprint = {cert?.Thumbprint ?? "n/a"} saved to thumbprint.txt");
+            if (cert != null)
+            {
+                File.WriteAllText("thumbprint.txt", cert.Thumbprint);
+            }           
             Console.ReadKey();
 
             if (delete)
