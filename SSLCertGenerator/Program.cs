@@ -131,17 +131,27 @@ namespace SSLCertGenerator
                 //try to save cert for adding to clients as a 'trusted doohickey'
                 if (!delete)
                 {
-                    if (File.Exists($"{friendlyName.Value}.pfx"))
+                    string fname;
+                    if (string.IsNullOrEmpty(filename.Value))
                     {
-                        File.Delete($"{friendlyName.Value}.pfx");
+                        fname = friendlyName.Value;
+                    }
+                    else
+                    {
+                        fname = filename.Value;
+                    }
+
+                    if (File.Exists($"{fname}.pfx"))
+                    {
+                        File.Delete($"{fname}.pfx");
                     }
                     var pwdGuid = Guid.NewGuid().ToString().Replace("{", "").Replace("}", "").Replace("-", "").Substring(0, 8);
                     byte[] certData = cert.Export(X509ContentType.Pfx, pwdGuid);
-                    File.WriteAllBytes($"{friendlyName.Value}.pfx", certData);
+                    File.WriteAllBytes($"{fname}.pfx", certData);
 
                     File.WriteAllText("pass.txt", pwdGuid);
 
-                    Console.WriteLine($"saved file to {friendlyName.Value}.pfx - add this to Trusted providers on clients (password is {pwdGuid}), saved to pass.txt");
+                    Console.WriteLine($"saved file to {fname}.pfx - add this to Trusted providers on clients (password is {pwdGuid}), saved to pass.txt");
 
                 }
             }
